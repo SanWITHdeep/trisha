@@ -1,0 +1,378 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Hey Big Guy</title>
+    <style>
+        /* --- CSS STYLES --- */
+        :root {
+            --primary: #ff0055; /* Neon Pink */
+            --secondary: #00f0ff; /* Neon Cyan */
+            --bg: #0a0a0a;
+            --card: #1a1a1a;
+            --text: #ffffff;
+        }
+
+        body {
+            margin: 0;
+            font-family: 'Segoe UI', Tahoma, Geneva, Verdana, sans-serif;
+            background-color: var(--bg);
+            color: var(--text);
+            overflow-x: hidden;
+            display: flex;
+            justify-content: center;
+            align-items: center;
+            min-height: 100vh;
+        }
+
+        .container {
+            width: 90%;
+            max-width: 450px;
+            background: var(--card);
+            border-radius: 20px;
+            padding: 20px;
+            box-shadow: 0 0 20px rgba(255, 0, 85, 0.2);
+            text-align: center;
+            position: relative;
+            overflow: hidden;
+            min-height: 600px;
+            display: flex;
+            flex-direction: column;
+            justify-content: center;
+        }
+
+        /* Memoji Avatar */
+        .avatar {
+            width: 120px;
+            height: 120px;
+            border-radius: 50%;
+            background: #333;
+            margin: 0 auto 20px;
+            border: 3px solid var(--secondary);
+            overflow: hidden;
+            position: relative;
+        }
+        
+        .avatar img {
+            width: 100%;
+            height: 100%;
+            object-fit: cover;
+        }
+
+        h1, h2 { margin-bottom: 10px; }
+        p { color: #ccc; line-height: 1.5; margin-bottom: 20px; }
+
+        /* Buttons */
+        .btn {
+            background: linear-gradient(45deg, var(--primary), #ff5e99);
+            border: none;
+            padding: 12px 30px;
+            color: white;
+            font-size: 1.1rem;
+            border-radius: 50px;
+            cursor: pointer;
+            transition: transform 0.2s, box-shadow 0.2s;
+            margin: 10px;
+            text-decoration: none;
+            display: inline-block;
+        }
+
+        .btn:active { transform: scale(0.95); }
+        .btn-outline {
+            background: transparent;
+            border: 2px solid var(--secondary);
+            color: var(--secondary);
+        }
+
+        /* GAME: Dumbbell Lift */
+        #game-screen { display: none; }
+        .dumbbell-container {
+            height: 150px;
+            display: flex;
+            justify-content: center;
+            align-items: flex-end;
+            margin: 30px 0;
+        }
+        .dumbbell {
+            font-size: 50px;
+            transition: transform 0.1s;
+            cursor: pointer;
+            user-select: none;
+        }
+        .progress-bar {
+            width: 100%;
+            height: 20px;
+            background: #333;
+            border-radius: 10px;
+            overflow: hidden;
+            margin-top: 20px;
+        }
+        .progress-fill {
+            height: 100%;
+            width: 0%;
+            background: var(--secondary);
+            transition: width 0.1s;
+        }
+
+        /* QUIZ */
+        #quiz-screen { display: none; }
+        .question-card {
+            opacity: 0;
+            transform: translateX(50px);
+            transition: all 0.5s ease;
+            display: none; 
+        }
+        .question-card.active {
+            display: block;
+            opacity: 1;
+            transform: translateX(0);
+        }
+        .option {
+            background: #2a2a2a;
+            padding: 15px;
+            margin: 10px 0;
+            border-radius: 10px;
+            cursor: pointer;
+            border: 1px solid #333;
+            transition: 0.3s;
+            text-align: left;
+        }
+        .option:hover { border-color: var(--secondary); background: #333; }
+        .option.selected { border-color: var(--primary); background: #3a1a25; }
+
+        /* FINAL SCREENS */
+        #success-screen, #fail-screen { display: none; }
+        
+        /* Floating Emojis */
+        .floating {
+            position: absolute;
+            animation: float 6s infinite ease-in-out;
+            opacity: 0.3;
+            z-index: 0;
+            font-size: 2rem;
+        }
+        @keyframes float {
+            0%, 100% { transform: translateY(0); }
+            50% { transform: translateY(-20px); }
+        }
+
+    </style>
+</head>
+<body>
+
+    <div class="floating" style="top: 10%; left: 10%;">💪</div>
+    <div class="floating" style="top: 20%; right: 10%; animation-delay: 1s;">✈️</div>
+    <div class="floating" style="bottom: 15%; left: 15%; animation-delay: 2s;">❤️</div>
+    <div class="floating" style="bottom: 10%; right: 20%; animation-delay: 0.5s;">💊</div>
+
+    <div class="container">
+        
+        <div id="intro-screen">
+            <div class="avatar">
+                <img src="https://cdn-icons-png.flaticon.com/512/4140/4140048.png" alt="Memoji"> 
+            </div>
+            <h1>Hey, Big Guy.</h1>
+            <p>I know you're busy building muscles, but we need to work out something else today.</p>
+            <p>Prove you have the stamina for this conversation.</p>
+            <button class="btn" onclick="startGame()">Let's Lift</button>
+        </div>
+
+        <div id="game-screen">
+            <h2>The Rep Challenge</h2>
+            <p>Tap the dumbbell to fill the Commitment Bar. Don't stop!</p>
+            
+            <div class="dumbbell-container">
+                <div class="dumbbell" id="dumbbell" onclick="liftWeight()">❚█══█❚</div>
+            </div>
+
+            <div class="progress-bar">
+                <div class="progress-fill" id="progress"></div>
+            </div>
+            <p id="rep-count">Reps: 0</p>
+        </div>
+
+        <div id="quiz-screen">
+            <div class="avatar" style="width: 80px; height: 80px;">
+                <img src="https://cdn-icons-png.flaticon.com/512/4140/4140048.png" alt="Memoji"> 
+            </div>
+            
+            <div class="question-card active" id="q1">
+                <h3>Set 1: The London Factor</h3>
+                <p>You're moving to London in a year. New timezone, new life. Scary, right? But honestly...</p>
+                <div class="option" onclick="selectOption(1, 10)">Distance is just a number if the bond is real.</div>
+                <div class="option" onclick="selectOption(1, 0)">It's too risky, better to stay unattached.</div>
+                <div class="option" onclick="selectOption(1, 5)">We cross that bridge when we get there.</div>
+            </div>
+
+            <div class="question-card" id="q2">
+                <h3>Set 2: The Label</h3>
+                <p>We do everything couples do. Hand holding, jealousy, support. So, calling it a "Relationship" is...</p>
+                <div class="option" onclick="selectOption(2, 10)">A safety net that shows I value you.</div>
+                <div class="option" onclick="selectOption(2, 0)">A trap. I need my freedom.</div>
+                <div class="option" onclick="selectOption(2, 5)">Just a word, why does it matter?</div>
+            </div>
+
+            <div class="question-card" id="q3">
+                <h3>Set 3: The Feelings</h3>
+                <p>When you tell me "No one treats me like you do" & "Don't leave"... what is that?</p>
+                <div class="option" onclick="selectOption(3, 10)">It's love, and I don't want to lose it.</div>
+                <div class="option" onclick="selectOption(3, 0)">It's comfort. I like having you around.</div>
+                <div class="option" onclick="selectOption(3, 5)">I'm confused myself.</div>
+            </div>
+
+        </div>
+
+        <div id="success-screen">
+            <h1>You Passed the Check.</h1>
+            <p>You scored <span id="final-score"></span>%. That means there's something real here worth fighting for, even with London coming up.</p>
+            <p>So, I have one last question...</p>
+            <h2 style="color: var(--primary); margin: 30px 0;">Will you be my Valentine?</h2>
+            <p style="font-size: 0.8rem;">(And maybe make it official?)</p>
+            
+            <button class="btn" onclick="sendResult('YES')">YES, I'm in.</button>
+            <button class="btn btn-outline" onclick="sendResult('NO')">No, I can't.</button>
+        </div>
+
+        <div id="fail-screen">
+            <h1>Rep Failure.</h1>
+            <p>You scored <span id="fail-score"></span>%.</p>
+            <p>It seems like you really aren't ready, and maybe I need to stop hoping you will be.</p>
+            <p>Go crush it in London.</p>
+            <button class="btn btn-outline" onclick="sendResult('GOODBYE')">Tell her.</button>
+        </div>
+
+    </div>
+
+<script>
+        /* --- JAVASCRIPT LOGIC --- */
+        let score = 0;
+        let reps = 0;
+        const maxReps = 15;
+        
+        // --- GAME LOGIC ---
+        function startGame() {
+            document.getElementById('intro-screen').style.display = 'none';
+            document.getElementById('game-screen').style.display = 'block';
+        }
+
+        function liftWeight() {
+            const db = document.getElementById('dumbbell');
+            const bar = document.getElementById('progress');
+            
+            // Animation
+            db.style.transform = "translateY(-20px) rotate(-5deg)";
+            setTimeout(() => {
+                db.style.transform = "translateY(0) rotate(0)";
+            }, 100);
+
+            reps++;
+            document.getElementById('rep-count').innerText = "Reps: " + reps;
+            
+            let percentage = (reps / maxReps) * 100;
+            bar.style.width = percentage + "%";
+
+            if (reps >= maxReps) {
+                setTimeout(startQuiz, 500);
+            }
+        }
+
+        // --- QUIZ LOGIC ---
+        function startQuiz() {
+            document.getElementById('game-screen').style.display = 'none';
+            document.getElementById('quiz-screen').style.display = 'block';
+        }
+
+        let currentQ = 1;
+        const totalQ = 3;
+
+        function selectOption(qNum, points) {
+            score += points;
+            document.getElementById(`q${qNum}`).classList.remove('active');
+            
+            setTimeout(() => {
+                document.getElementById(`q${qNum}`).style.display = 'none';
+                if (qNum < totalQ) {
+                    const next = document.getElementById(`q${qNum + 1}`);
+                    next.style.display = 'block';
+                    setTimeout(() => next.classList.add('active'), 50);
+                    currentQ++;
+                } else {
+                    finishQuiz();
+                }
+            }, 400);
+        }
+
+        function finishQuiz() {
+            document.getElementById('quiz-screen').style.display = 'none';
+            const percentage = Math.round((score / 30) * 100);
+
+            if (percentage >= 70) {
+                document.getElementById('success-screen').style.display = 'flex';
+                document.getElementById('success-screen').style.flexDirection = 'column';
+                document.getElementById('final-score').innerText = percentage;
+            } else {
+                document.getElementById('fail-screen').style.display = 'flex';
+                document.getElementById('fail-screen').style.flexDirection = 'column';
+                document.getElementById('fail-score').innerText = percentage;
+            }
+        }
+
+        // --- SUBMISSION LOGIC ---
+        function sendResult(answer) {
+            const percentage = Math.round((score / 30) * 100);
+            
+            // ⚠️ IMPORTANT: REPLACE THIS WITH TRISHA'S REAL EMAIL ⚠️
+            const yourEmail = "sanwithdeep@gmail.com"; 
+            
+            // ⚠️ OPTIONAL: REPLACE WITH TRISHA'S PHONE NUMBER FOR BACKUP ⚠️
+            const phoneNumber = "919036736316"; 
+
+            const buttons = document.querySelectorAll('.btn');
+            buttons.forEach(btn => btn.innerText = "Processing...");
+
+            // 1. Try to send Email silently
+            fetch(`https://formsubmit.co/ajax/${yourEmail}`, {
+                method: "POST",
+                headers: { 
+                    'Content-Type': 'application/json',
+                    'Accept': 'application/json'
+                },
+                body: JSON.stringify({
+                    _subject: "Valentine Quiz Result!",
+                    Applicant: "Mr. London Gym Guy",
+                    Score: percentage + "%",
+                    Final_Answer: answer,
+                    Message: answer === 'YES' ? "He said YES! ❤️" : "He said No/Goodbye."
+                })
+            })
+            .then(response => response.json())
+            .then(data => {
+                // SUCCESS: Email sent
+                if(answer === 'YES') {
+                    alert("Response sent successfully! She'll know. ❤️");
+                } else {
+                    alert("Understood. Response sent.");
+                }
+                buttons.forEach(btn => btn.innerText = "Sent");
+            })
+            .catch(error => {
+                // FAILURE: Fallback to WhatsApp
+                console.log("Email failed, switching to WhatsApp backup.");
+                
+                let text = "";
+                if (answer === 'YES') {
+                    text = `Hey, I tried the quiz. Scored ${percentage}%. And YES. ❤️ (The site glitched so I'm texting)`;
+                } else {
+                    text = `Hey, I tried the quiz. Scored ${percentage}%. (The site glitched so I'm texting)`;
+                }
+
+                const url = `https://wa.me/${phoneNumber}?text=${encodeURIComponent(text)}`;
+                
+                // Redirect to WhatsApp
+                window.location.href = url;
+            });
+        }
+    </script>
+</body>
+</html>
