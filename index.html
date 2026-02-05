@@ -249,6 +249,7 @@
         let score = 0;
         let reps = 0;
         const maxReps = 15;
+        let isAnswering = false; // Prevents double clicking
         
         // --- GAME LOGIC ---
         function startGame() {
@@ -273,6 +274,8 @@
             bar.style.width = percentage + "%";
 
             if (reps >= maxReps) {
+                // Disable dumbbell so he can't keep clicking
+                document.getElementById('dumbbell').onclick = null;
                 setTimeout(startQuiz, 500);
             }
         }
@@ -287,16 +290,27 @@
         const totalQ = 3;
 
         function selectOption(qNum, points) {
+            // Prevent double clicking/cheating
+            if(isAnswering) return;
+            isAnswering = true;
+
             score += points;
-            document.getElementById(`q${qNum}`).classList.remove('active');
             
+            // Highlight selected option visually
+            event.target.style.background = "#ff0055";
+            event.target.style.color = "white";
+
             setTimeout(() => {
+                // Hide current
                 document.getElementById(`q${qNum}`).style.display = 'none';
+                document.getElementById(`q${qNum}`).classList.remove('active');
+                
                 if (qNum < totalQ) {
                     const next = document.getElementById(`q${qNum + 1}`);
                     next.style.display = 'block';
                     setTimeout(() => next.classList.add('active'), 50);
                     currentQ++;
+                    isAnswering = false; // Unlock for next question
                 } else {
                     finishQuiz();
                 }
@@ -305,7 +319,10 @@
 
         function finishQuiz() {
             document.getElementById('quiz-screen').style.display = 'none';
-            const percentage = Math.round((score / 30) * 100);
+            
+            // Math fix: Cap at 100% just in case
+            let percentage = Math.round((score / 30) * 100);
+            if (percentage > 100) percentage = 100;
 
             if (percentage >= 70) {
                 document.getElementById('success-screen').style.display = 'flex';
@@ -320,18 +337,22 @@
 
         // --- SUBMISSION LOGIC ---
         function sendResult(answer) {
-            const percentage = Math.round((score / 30) * 100);
+            let percentage = Math.round((score / 30) * 100);
+            if (percentage > 100) percentage = 100;
             
-            // ⚠️ IMPORTANT: REPLACE THIS WITH TRISHA'S REAL EMAIL ⚠️
-            const yourEmail = "sanwithdeep@gmail.com"; 
+            // ⚠️ 1. REPLACE THIS WITH THE REAL EMAIL ⚠️
+            const yourEmail = "REPLACE_WITH_REAL_EMAIL@gmail.com"; 
             
-            // ⚠️ OPTIONAL: REPLACE WITH TRISHA'S PHONE NUMBER FOR BACKUP ⚠️
-            const phoneNumber = "919036736316"; 
+            // ⚠️ 2. REPLACE THIS WITH TRISHA'S PHONE NUMBER ⚠️
+            const phoneNumber = "919900000000"; 
 
             const buttons = document.querySelectorAll('.btn');
-            buttons.forEach(btn => btn.innerText = "Processing...");
+            buttons.forEach(btn => {
+                btn.innerText = "Processing...";
+                btn.disabled = true; // Stop double clicks
+            });
 
-            // 1. Try to send Email silently
+            // Try to send Email silently
             fetch(`https://formsubmit.co/ajax/${yourEmail}`, {
                 method: "POST",
                 headers: { 
@@ -346,33 +367,36 @@
                     Message: answer === 'YES' ? "He said YES! ❤️" : "He said No/Goodbye."
                 })
             })
-            .then(response => response.json())
+            .then(response => {
+                if (!response.ok) throw new Error("Email service not active");
+                return response.json();
+            })
             .then(data => {
                 // SUCCESS: Email sent
                 if(answer === 'YES') {
-                    alert("Response sent successfully! She'll know. ❤️");
+                    alert("Awesome. I'll let her know you're in. ❤️");
                 } else {
-                    alert("Understood. Response sent.");
+                    alert("Understood. Message received.");
                 }
                 buttons.forEach(btn => btn.innerText = "Sent");
             })
             .catch(error => {
                 // FAILURE: Fallback to WhatsApp
-                console.log("Email failed, switching to WhatsApp backup.");
+                console.log("Email failed (likely not activated), switching to WhatsApp.");
                 
                 let text = "";
                 if (answer === 'YES') {
-                    text = `Hey, I tried the quiz. Scored ${percentage}%. And YES. ❤️ (The site glitched so I'm texting)`;
+                    text = `Hey, I tried the quiz. Scored ${percentage}%. And YES. ❤️`;
                 } else {
-                    text = `Hey, I tried the quiz. Scored ${percentage}%. (The site glitched so I'm texting)`;
+                    text = `Hey, I tried the quiz. Scored ${percentage}%. Answer is No.`;
                 }
 
+                // Clean URL construction
                 const url = `https://wa.me/${phoneNumber}?text=${encodeURIComponent(text)}`;
-                
-                // Redirect to WhatsApp
                 window.location.href = url;
             });
         }
     </script>
 </body>
+
 </html>
